@@ -21,7 +21,7 @@ class BaseEstimator(BE):
         """
 
         """
-        self._fit_checkers(X, y, coefs, timestamps)
+        coefs = self._fit_checkers(X, y, coefs, timestamps)
 
         sDict = {}
         i = 0
@@ -48,6 +48,7 @@ class BaseEstimator(BE):
         if timestamps:
             assert (type(timestamps) in Config.ALLOWED_ARRAY_TYPES)
             assert len(X) == len(timestamps)
+        return coefs
 
     def predict(self, X, y=None):
         """
