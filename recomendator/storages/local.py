@@ -12,7 +12,7 @@ class Local():
         """
         Get by key.
         """
-        return self.storage.get(key)
+        return self.storage.get(key, {})
 
     def post(self, key, value):
         """

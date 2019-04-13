@@ -40,7 +40,7 @@ def sim_distance(items1, items2):
 
     # Получить список предметов, оцененных обоими
     si={}
-    for item in items1:
+    for item in items1 or []:
         if item in items2:
             si[item]=1
 

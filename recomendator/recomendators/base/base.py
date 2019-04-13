@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 from sklearn.base import BaseEstimator as BE
 
-from ..configs import Config
-from ..storages import Local
-from ..metrics import sim_distance
+from ...configs import Config
+from ...storages import Local
+from ...metrics import sim_distance
 
 class BaseEstimator(BE):
     """
