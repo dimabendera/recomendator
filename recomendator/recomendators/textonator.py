@@ -284,7 +284,7 @@ class Textonator(BaseEstimator):
         # Output
         x = Dropout(self.dense_dropout)(x)
         x = BatchNormalization()(x)
-        preds = Dense(len(1, activation=self.dense_activation)(x)
+        preds = Dense(1, activation=self.dense_activation)(x)
 
         # build the model
         model = Model(inputs=[comment_input_1, comment_input_2], outputs=preds)

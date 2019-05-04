@@ -1,4 +1,5 @@
 ### Metrics
+import math
 
 def sim_pearson(items1, items2):
     """ Возвращает коэффициент корреляции Пирсона между p1 и p2 """
@@ -27,7 +28,7 @@ def sim_pearson(items1, items2):
 
     # Вычислить коэффициент Пирсона
     num=pSum-(sum1*sum2/n)
-    den=sqrt((sum1Sq-pow(sum1,2)/n)*(sum2Sq-pow(sum2,2)/n))
+    den=math.sqrt((sum1Sq-pow(sum1,2)/n)*(sum2Sq-pow(sum2,2)/n))
     if den==0: return 0
 
     r=num/den
