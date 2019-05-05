@@ -25,55 +25,6 @@ from tqdm import tqdm
 from string import punctuation
 import string
 import keras
-from keras.layers import Dense, Input, LSTM, Embedding, Dropout,SpatialDropout1D, Bidirectional, concatenate
-from keras.models import Model
-from keras.optimizers import Adam
-from keras.layers import BatchNormalization
-from keras.preprocessing.sequence import pad_sequences
-import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.base import BaseEstimator, ClassifierMixin
-import os
-import json
-from sklearn.model_selection import GridSearchCV
-import tensorflow as tf
-
-config = tf.ConfigProto(intra_op_parallelism_threads=1,
-                        inter_op_parallelism_threads=1,
-                        allow_soft_placement=False,
-                        device_count = {'CPU': 1})
-session = tf.Session(config=config)
-keras.backend.set_session(session)
-
-
-import pymysql.cursors
-import json
-import sys
-import gensim
-from gensim import corpora
-from pprint import pprint
-from gensim import models
-import numpy as np
-from gensim.models import LdaModel, LdaMulticore
-import gensim.downloader as api
-from gensim.utils import simple_preprocess, lemmatize
-from nltk.corpus import stopwords
-import re
-import logging
-import pymorphy2
-from stop_words import get_stop_words
-from gensim.models.word2vec import Word2Vec
-from multiprocessing import cpu_count
-import gensim.downloader as api
-from nltk.tokenize import WordPunctTokenizer
-from collections import Counter
-from string import punctuation, ascii_lowercase
-import re
-from tqdm import tqdm
-from string import punctuation
-import string
-import keras
 from keras.layers import Dense, Input, LSTM, Embedding, Dropout,SpatialDropout1D, Bidirectional
 from keras.models import Model
 from keras.optimizers import Adam
@@ -97,11 +48,11 @@ keras.backend.set_session(session)
 
 
 class Textonator(BaseEstimator):
-    """Textator"""
+    """Textonator"""
 
     def __init__(self,
 
-                 w2v_size      = 100,
+                 w2v_size      = 50,
                  w2v_window    = 5,
                  w2v_min_count = 5,
                  w2v_workers   = 16,
@@ -109,7 +60,7 @@ class Textonator(BaseEstimator):
                  w2v_negative  = 5,
 
                  max_sequence_length      = 10,
-                 wv_dim                   = 100,
+                 wv_dim                   = 50,
                  pad_sequences_padding    = "pre",
                  pad_sequences_truncating = "post",
 
@@ -141,16 +92,12 @@ class Textonator(BaseEstimator):
         self.compile_optimazer   = Adam(lr=0.001, clipnorm=.25, beta_1=0.7, beta_2=0.99)
         self.compile_metrics     = ["acc"]
 
-        self.classes             = classes,
-
-        self.w2v_size            = w2v_size,
-        self.w2v_window          = w2v_window,
-        self.w2v_min_count       = w2v_min_count,
-        self.w2v_workers         = w2v_workers,
-        self.w2v_sg              = w2v_sg,
+        self.w2v_size            = w2v_size
+        self.w2v_window          = w2v_window
+        self.w2v_min_count       = w2v_min_count
+        self.w2v_workers         = w2v_workers
+        self.w2v_sg              = w2v_sg
         self.w2v_negative        = w2v_negative
-
-        self.classes             = classes
 
         self.wv_dim              = wv_dim
         self.max_sequence_length = max_sequence_length
@@ -168,7 +115,7 @@ class Textonator(BaseEstimator):
         self.vocab_2    = Counter()
         self.tokenizer  = WordPunctTokenizer()
         self.morph      = pymorphy2.MorphAnalyzer()
-        self.white_list = string.ascii_lowercase + "ёйцукенгшщзхъїфыівапролджэєячсмитьбю`'"
+        self.white_list = string.ascii_lowercase + "ёйцукенгшщзхъїфыівапролджэєячсмитьбю`'" + string.digits
         self.stop_words =  set(
             [x for x in self.white_list]
             + stopwords.words('russian')
@@ -193,7 +140,7 @@ class Textonator(BaseEstimator):
         #                    re.MULTILINE|re.UNICODE)
         # replace ips
         #re_ip = re.compile("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
-        filtering = lambda x: x in self.white_list
+        self.filtering = lambda x: x in self.white_list
 
         # set best params
         if best_params != None:
@@ -205,7 +152,7 @@ class Textonator(BaseEstimator):
         for wd in data:
 
             wd = wd.strip()
-            wd = "".join(list(filter(filtering, wd)))
+            wd = "".join(list(filter(self.filtering, wd)))
             if wd not in self.stop_words \
                     and wd not in string.punctuation \
                     and wd not in string.whitespace:
@@ -246,7 +193,7 @@ class Textonator(BaseEstimator):
             print("Number of word vectors: {}".format(len(w2v_model.wv.vocab)))
 
         self.w2v_model = w2v_model
-        return w2v_model,
+        return w2v_model
 
     def _create_model(self, wv_matrix_1, wv_matrix_2, nb_words_1, nb_words_2):
         # Embedding
@@ -275,7 +222,7 @@ class Textonator(BaseEstimator):
         embedded_sequences_2 = wv_layer_2(comment_input_2)
 
         # concatenate
-        embedded_sequences = concatenate([(embedded_sequences_1), (embedded_sequences_2)])
+        embedded_sequences = keras.layers.concatenate([(embedded_sequences_1), (embedded_sequences_2)])
 
         # biLSTm
         embedded_sequences = SpatialDropout1D(self.dropout1d)(embedded_sequences)
@@ -294,7 +241,7 @@ class Textonator(BaseEstimator):
                       optimizer = self.compile_optimazer,
                       metrics   = self.compile_metrics)
 
-        return model,
+        return model
 
     def _create_wv_matrix(self, w2v_model, word_index, nb_words, max_nb_words):
         wv_matrix = (np.random.rand(nb_words, self.wv_dim) - 0.5) / 5.0
@@ -333,7 +280,7 @@ class Textonator(BaseEstimator):
             w2v_model_1 = w2v_model_1
 
         # train or load 2
-        if w2v_model == None:
+        if w2v_model_2 == None:
             w2v_model_2  = self._fit_w2v(X2, y, verbose)
             self.vocab_2 = self.vocab
             self.vocab   = Counter()
@@ -365,12 +312,12 @@ class Textonator(BaseEstimator):
         model = self._create_model(wv_matrix_1, wv_matrix_2, nb_words_1, nb_words_2)
 
         # train
-        hist = model.fit([X_train], y_train, validation_split=validation_split,
-                 epochs=epochs, batch_size=batch_size, shuffle=True)
+        hist = model.fit([X_train_1, X_train_2], y_train, validation_split=self.validation_split,
+                 epochs=self.epochs, batch_size=self.batch_size, shuffle=True)
 
         self.model        = model
         self.word_index_1 = word_index_1
-        self.word_index_1 = word_index_2
+        self.word_index_2 = word_index_2
         return hist
 
 
@@ -398,10 +345,10 @@ class Textonator(BaseEstimator):
         """
         # normalize
         self.vocab = self.vocab_1
-        X_test_1 = self._normalize(X, self.word_index_1, update_vocab=False)
+        X_test_1 = self._normalize(X1, self.word_index_1, update_vocab=False)
         self.vocab = self.vocab_2
-        X_test_2 = self._normalize(X, self.word_index_2, update_vocab=False)
+        X_test_2 = self._normalize(X2, self.word_index_2, update_vocab=False)
         self.vocab = Counter()
 
         # predict
-        return self.model.predict({"X1": [X_test_1], "X2": [X_test_2]})
+        return self.model.predict({"X1": X_test_1, "X2": X_test_2})
